@@ -3,51 +3,60 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <integer1> <integer2>\n", argv[0]);
+pid_t pid, child_pid;
+
+int main(int argc, char *argv[])
+{
+    if (argc != 3)
+    {
+        fprintf(stderr, "Esquema: %s <numero1> <numero2>\n", argv[0]);
+        fprintf(stderr, "Por favor, ingrese dos números enteros como argumentos.\n");
         return 1;
     }
 
     int num1 = atoi(argv[1]);
     int num2 = atoi(argv[2]);
 
-    if (num1 < 0 || num1 > 100 || num2 < 0 || num2 > 100) {
-        fprintf(stderr, "Error: Both numbers must be between 0 and 100.\n");
+    if (num1 < 0 || num1 > 100 || num2 < 0 || num2 > 100)
+    {
+        fprintf(stderr, "Error: Ambos números deben estar entre 0 y 100.\n");
         return 1;
     }
 
     int sum = num1 + num2;
-    printf("Sum: %d\n", sum);
+    printf("Padre (pid = %d), El resultado de la operación %d + %d és %d\n", getpid(), num1, num2, sum);
 
-    for (int i = 0; i < sum; i++) {
-        pid_t pid = fork();
+    for (int i = 0; i < sum; i++)
+    {
+        pid = fork();
+        waitpid(pid, 0, 0);
+        if (pid < 0)
+        {
+            perror("error de fork");
+            return 1;
+        }
+        else if (pid == 0)
+        { // Proceso hijo
+            printf("PID Hijo: %d, PID del padre: %d, Posición: %d\n", getpid(), getppid(), i + 1);
 
-        if (pid < 0) {
-            perror("fork");
-            exit(1);
-        } else if (pid == 0) { // Child process
-            printf("Child PID: %d, Parent PID: %d, Position: %d\n", getpid(), getppid(), i + 1);
-
-            for (int j = 0; j <= i; j++) {
-                pid_t child_pid = fork();
-
-                if (child_pid < 0) {
-                    perror("fork");
+            for (int j = 0; j <= i; j++)
+            {
+                child_pid = fork();
+                waitpid(child_pid, 0, 0);
+                if (child_pid < 0)
+                {
+                    perror("error de fork");
                     exit(1);
-                } else if (child_pid == 0) { // Grandchild process
-                    printf("Grandchild PID: %d, Parent PID: %d\n", getpid(), getppid());
-                    exit(0);
-                } else {
-                    wait(NULL); // Parent waits for the grandchild to finish
+                }
+                else if (child_pid == 0)
+                { // Proceso nieto
+                    printf("PID Hijo: %d, PID del padre: %d, Posición: %d\n", getpid(), getppid(), j + 1);
+                    return 0;
                 }
             }
-            exit(0); // Child exits after creating its children
+            return 0; // El hijo sale después de crear sus hijos
         }
     }
-
-    // Parent waits for all child processes to finish
-    while (wait(NULL) > 0);
 
     return 0;
 }
