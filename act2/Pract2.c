@@ -18,18 +18,16 @@ int main(int argc, char *argv[]) {
     if (*endptr != '\0' || endptr == argv[1]) {
         printf("No es entero.\n");
         return 1;
-    } 
-
-    int num_terminal = atoi(argv[1]);
+    }
 
     // Verifica si el número está dentro del rango [0, 100]
-    if (num_terminal < 0 || num_terminal > 100) {
+    if (num < 0 || num > 100) {
         fprintf(stderr, "Error: El número debe estar entre 0 y 100.\n");
         return 1; 
     }
 
     // Convertir el número pasado a uint8_t
-    uint8_t numero = (uint8_t)num_terminal;
+    uint8_t numero = (uint8_t)num;
 
     // Define Pipes
     int p1[2], p2[2];
