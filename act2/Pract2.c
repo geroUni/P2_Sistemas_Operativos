@@ -7,6 +7,7 @@
 int main(int argc, char *argv[]) {
     // Verifica si el número de parámetros es correcto
     if (argc != 2) {
+        fprintf(stderr, "Esquema: %s <numero>\n", argv[0]);
         fprintf(stderr, "Error. Ingresa un unico parametro.\n");
         return 1;
     }
