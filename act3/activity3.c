@@ -72,14 +72,11 @@ int main(int argc, char *argv[])
     if (pid == 0)
     {
 
-        while (*num_compartido > 0)
+        while (*num_compartido >= 0)
         {
             sem_wait(sem_punt);
             printf("Hijo recibió: %d\n", *num_compartido);
             (*num_compartido)--;
-            if(*num_compartido == 0){
-                break;
-            }
             sem_post(sem_punt);
             sleep(0.0001);
         }
@@ -87,14 +84,11 @@ int main(int argc, char *argv[])
     else
     {
         printf("Padre (pid=%d): Comenzare a contar desde %d hasta 0\n", getpid(), num_entrada); // Imprime el valor recibido por el padre
-        while (*num_compartido > 0)
+        while (*num_compartido >= 0)
         {
             sem_wait(sem_punt);
             printf("Padre envió: %d\n", *num_compartido);
             (*num_compartido)--;
-            if(*num_compartido == 0){
-                break;
-            }
             sem_post(sem_punt);
             sleep(0.0001);
         }
