@@ -11,7 +11,8 @@
 #define SEMF_NOMBRE "/mi_semaforo"
 
 int main(int argc, char *argv[])
-{
+{   
+    int valor_semaforo;
     key_t clave_shm; // Declaración de la clave para la memoria compartida
     int id_shm;      // Identificador de la memoria compartida
     void *ptr_shm;   // Puntero a la memoria compartida
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
         perror("shmat");
         return 1;
     }
-
+    sem_unlink(SEMF_NOMBRE);
     sem_punt = sem_open(SEMF_NOMBRE, O_CREAT | O_EXCL, 0644, 1);
 
     if (sem_punt == SEM_FAILED)
@@ -57,63 +58,66 @@ int main(int argc, char *argv[])
         perror("sem_open");
         return 1;
     }
-
+    
     pid = fork();
-
-
     if (pid < 0)
     {
         perror("Fork falló");
         return 1;
     }
 
-
-    printf("Padre (pid=%d): Comenzare a contar desde %d hasta 0\n", getpid(), num_entrada); // Imprime el valor recibido por el padre
     int *num_compartido = (int *)ptr_shm;
+    *num_compartido = num_entrada;
 
     if (pid == 0)
     {
-        while (num_entrada > 0)
+
+        while (*num_compartido > 0)
         {
             sem_wait(sem_punt);
-            (*num_compartido)--;
             printf("Hijo recibió: %d\n", *num_compartido);
+            (*num_compartido)--;
+            if(*num_compartido == 0){
+                break;
+            }
             sem_post(sem_punt);
-            num_entrada--;
+            sleep(0.0001);
         }
     }
     else
     {
-        while (num_entrada > 0)
+        printf("Padre (pid=%d): Comenzare a contar desde %d hasta 0\n", getpid(), num_entrada); // Imprime el valor recibido por el padre
+        while (*num_compartido > 0)
         {
             sem_wait(sem_punt);
-            *num_compartido = num_entrada;
             printf("Padre envió: %d\n", *num_compartido);
+            (*num_compartido)--;
+            if(*num_compartido == 0){
+                break;
+            }
             sem_post(sem_punt);
-            num_entrada--;
+            sleep(0.0001);
         }
         waitpid(pid, NULL, 0);
+
+        // Desconectar de la memoria compartida
+        if (shmdt(ptr_shm) == -1)
+        {
+            perror("shmdt");
+            return 1;
+        }
+
+        // Eliminar segmento de memoria compartida
+        if (shmctl(id_shm, IPC_RMID, NULL) == -1)
+        {
+            perror("shmctl");
+            return 1;
+        }
+
+        // Cerrar y desvincular semáforo
+        sem_close(sem_punt);
+        sem_unlink(SEMF_NOMBRE);
     }
-
-    
-
-    // Desconectar de la memoria compartida
-    if (shmdt(ptr_shm) == -1)
-    {
-        perror("shmdt");
-        return 1;
-    }
-
-    // Eliminar segmento de memoria compartida
-    if (shmctl(id_shm, IPC_RMID, NULL) == -1)
-    {
-        perror("shmctl");
-        return 1;
-    }
-
-    // Cerrar y desvincular semáforo
-    sem_close(sem_punt);
-    sem_unlink(SEMF_NOMBRE);
 
     return 0;
 }
