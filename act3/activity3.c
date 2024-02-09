@@ -69,6 +69,10 @@ int main(int argc, char *argv[])
         perror("sem_open");
         return 1;
     }
+
+    int *num_compartido = (int *)ptr_shm;
+    *num_compartido = num_entrada;
+
     pid = fork();
     if (pid < 0)
     {
@@ -76,15 +80,11 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int *num_compartido = (int *)ptr_shm;
-    *num_compartido = num_entrada;
-    int value;
+    
     if (pid == 0)
     {
         while (1)
         {
-            sem_getvalue(sem_punt2, &value);
-            printf("Valor del semáforo antes de sem_wait(): %d\n", valor_semaforo);
             sem_wait(sem_punt2);
             if (*num_compartido > 0)
             {
