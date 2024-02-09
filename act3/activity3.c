@@ -8,83 +8,112 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#define SEMF_NOMBRE "/my_semaphore"
+#define SEMF_NOMBRE "/mi_semaforo"
 
-int main(int argc, char *argv[]) {
-    key_t key_shm; // Declaración de la clave para la memoria compartida
-    int shmid; // Identificador de la memoria compartida
-    void *shm_ptr; // Puntero a la memoria compartida
+int main(int argc, char *argv[])
+{
+    key_t clave_shm; // Declaración de la clave para la memoria compartida
+    int id_shm;      // Identificador de la memoria compartida
+    void *ptr_shm;   // Puntero a la memoria compartida
     sem_t *sem_punt; // Puntero al semáforo
-    pid_t pid; // Identificador de proceso (PID)
+    pid_t pid;       // Identificador de proceso (PID)
 
-    if (argc != 2) { // Verifica que el programa se haya llamado con un argumento
-        fprintf(stderr, "Esquema: %s <número>\n", argv[0]); // Mensaje de uso correcto
-        fprintf(stderr, "Por favor, ingrese un número entero como argumento\n"); // Mensaje de error
+    if (argc != 2)
+    {
+        fprintf(stderr, "Uso: %s <número>\n", argv[0]);
+        fprintf(stderr, "Por favor, ingrese un número entero como argumento\n");
         return 1;
     }
 
-    int num_entrada = atoi(argv[1]); // Convierte el argumento en un número entero
+    int num_entrada = atoi(argv[1]);
 
-    if (num_entrada < 0 || num_entrada > 100) { // Verifica que el número esté en el rango especificado
-        fprintf(stderr, "Error: El número debe estar entre 0 y 100.\n"); // Mensaje de error
+    if (num_entrada < 0 || num_entrada > 100)
+    {
+        fprintf(stderr, "Error: El número debe estar entre 0 y 100.\n");
         return 1;
     }
 
-    key_shm = ftok(".", 'S'); // Genera la clave para la memoria compartida
-    shmid = shmget(key_shm, sizeof(int), 0644 | IPC_CREAT); // Crea o abre el segmento de memoria compartida
+    clave_shm = ftok(".", 'S');
+    id_shm = shmget(clave_shm, sizeof(int), 0644 | IPC_CREAT);
 
-    if (shmid == -1) { // Verifica si hubo un error al crear o abrir la memoria compartida
-        perror("shmget"); // Muestra un mensaje de error detallado
+    if (id_shm == -1)
+    {
+        perror("shmget");
         return 1;
     }
 
-    shm_ptr = shmat(shmid, NULL, 0); // Adjunta la memoria compartida al espacio de direcciones del proceso
+    ptr_shm = shmat(id_shm, NULL, 0);
 
-    if (shm_ptr == (void *)-1) { // Verifica si hubo un error al adjuntar la memoria compartida
-        perror("shmat"); // Muestra un mensaje de error detallado
+    if (ptr_shm == (void *)-1)
+    {
+        perror("shmat");
         return 1;
     }
 
-    sem_punt = sem_open(SEMF_NOMBRE, O_CREAT, 0644, 1); // Abre o crea el semáforo
+    sem_punt = sem_open(SEMF_NOMBRE, O_CREAT | O_EXCL, 0644, 1);
 
-    if (sem_punt == SEM_FAILED) { // Verifica si hubo un error al abrir o crear el semáforo
-        perror("sem_open"); // Muestra un mensaje de error detallado
+    if (sem_punt == SEM_FAILED)
+    {
+        perror("sem_open");
         return 1;
     }
 
-    pid = fork(); // Crea un proceso hijo
+    pid = fork();
 
-    if (pid < 0) { // Verifica si hubo un error al crear el proceso hijo
-        perror("Error de Fork"); // Muestra un mensaje de error detallado
+
+    if (pid < 0)
+    {
+        perror("Fork falló");
         return 1;
     }
 
-    if (pid == 0) { // Proceso hijo
-        sem_wait(sem_punt); // Espera a que el semáforo esté disponible
-        sprintf((char *)shm_ptr, "%s", "¡Hola desde el hijo!"); // Escribe en la memoria compartida
-        sem_post(sem_punt); // Libera el semáforo
-    } else { // Proceso padre
-        sem_wait(sem_punt); // Espera a que el semáforo esté disponible
-        sprintf((char *)shm_ptr, "%s", "¡Hola desde el padre!"); // Escribe en la memoria compartida
-        sem_post(sem_punt); // Libera el semáforo
-        waitpid(pid, NULL, 0); // El padre espera a que el proceso hijo termine
+
+    printf("Padre (pid=%d): Comenzare a contar desde %d hasta 0\n", getpid(), num_entrada); // Imprime el valor recibido por el padre
+    int *num_compartido = (int *)ptr_shm;
+
+    if (pid == 0)
+    {
+        while (num_entrada > 0)
+        {
+            sem_wait(sem_punt);
+            (*num_compartido)--;
+            printf("Hijo recibió: %d\n", *num_compartido);
+            sem_post(sem_punt);
+            num_entrada--;
+        }
     }
+    else
+    {
+        while (num_entrada > 0)
+        {
+            sem_wait(sem_punt);
+            *num_compartido = num_entrada;
+            printf("Padre envió: %d\n", *num_compartido);
+            sem_post(sem_punt);
+            num_entrada--;
+        }
+        waitpid(pid, NULL, 0);
+    }
+
+    
 
     // Desconectar de la memoria compartida
-    if (shmdt(shm_ptr) == -1) { // Verifica si hubo un error al desconectar la memoria compartida
-        perror("shmdt"); // Muestra un mensaje de error detallado
+    if (shmdt(ptr_shm) == -1)
+    {
+        perror("shmdt");
         return 1;
     }
 
     // Eliminar segmento de memoria compartida
-    if (shmctl(shmid, IPC_RMID, NULL) == -1) { // Verifica si hubo un error al eliminar la memoria compartida
-        perror("shmctl"); // Muestra un mensaje de error detallado
+    if (shmctl(id_shm, IPC_RMID, NULL) == -1)
+    {
+        perror("shmctl");
         return 1;
     }
 
     // Cerrar y desvincular semáforo
-    sem_close(sem_punt); // Cierra el semáforo
-    sem_unlink(SEMF_NOMBRE); // Elimina el semáforo
+    sem_close(sem_punt);
+    sem_unlink(SEMF_NOMBRE);
 
-    return 0; // Termina el programa sin errores
+    return 0;
 }
