@@ -12,7 +12,6 @@
 
 int main(int argc, char *argv[])
 {   
-    int valor_semaforo;
     key_t clave_shm; // Declaración de la clave para la memoria compartida
     int id_shm;      // Identificador de la memoria compartida
     void *ptr_shm;   // Puntero a la memoria compartida
