@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
             sem_wait(sem_punt2);
             if (*num_compartido > 0)
             {
-                printf("Hijo recibió: %d\n", *num_compartido);
+                printf("Hijo (pid=%d): %d\n", getpid(), *num_compartido);
                 (*num_compartido)--;
             }
             else
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
             sem_wait(sem_punt);
             if (*num_compartido > 0)
             {
-                printf("Padre envió: %d\n", *num_compartido);
+                printf("Padre (pid=%d): %d\n", getpid(), *num_compartido);
                 (*num_compartido)--;
             }
             else
