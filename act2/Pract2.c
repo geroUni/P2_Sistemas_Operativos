@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
         close(PadreAHijo[1]);
         close(HijoAPadre[0]);
 
-        while (1)
+        while (numero > 0)
         {
             uint8_t valor;
 
@@ -71,11 +71,12 @@ int main(int argc, char *argv[])
                 return 1;
             }
 
-            printf("Hijo (pid=%d): %d\n", getpid(), valor);
-            if (valor == 0)
+            if (valor >= 255)
             {
-                break;
+                return 1;
             }
+            printf("Hijo (pid=%d): %d\n", getpid(), valor);
+
             valor--;
 
             // Escribir en HijoAPadre
@@ -97,8 +98,13 @@ int main(int argc, char *argv[])
 
         printf("Padre (pid=%d): Comenzare a contar desde %d hasta 0\n", getpid(), numero); // Imprimir el valor recibido por el padre
 
-        while (numero > 0)
+        while (1)
+
         {
+            if (numero >= 255)
+            {
+                return 1;
+            }
             printf("Padre (pid=%d): %d\n", getpid(), numero); // Imprimir el valor recibido por el padre
 
             numero--;
