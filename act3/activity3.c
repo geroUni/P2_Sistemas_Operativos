@@ -1,23 +1,23 @@
-#include <stdio.h>     // Inclusión de la biblioteca estándar de entrada/salida
-#include <stdlib.h>    // Inclusión de la biblioteca estándar de funciones de utilidad
-#include <sys/ipc.h>   // Inclusión de la biblioteca para las claves IPC
-#include <sys/shm.h>   // Inclusión de la biblioteca para la memoria compartida
-#include <sys/types.h> // Inclusión de la biblioteca para los tipos de datos del sistema
-#include <semaphore.h> // Inclusión de la biblioteca para los semáforos
-#include <fcntl.h>     // Inclusión de la biblioteca para operaciones de archivo
-#include <unistd.h>    // Inclusión de la biblioteca para funciones de sistema POSIX
-#include <sys/wait.h>  // Inclusión de la biblioteca para la espera de procesos hijo
+#include <stdio.h>    
+#include <stdlib.h>    
+#include <sys/ipc.h>   
+#include <sys/shm.h>   
+#include <sys/types.h> 
+#include <semaphore.h> 
+#include <fcntl.h>     
+#include <unistd.h>    
+#include <sys/wait.h>  
 
 #define SEMF_NOMBRE "/mi_semaforo"   // Definición del nombre del semáforo
 #define SEMF2_NOMBRE "/mi_semaforo2" // Definición del nombre del segundo semáforo
 
 int main(int argc, char *argv[])
 {
-    key_t clave_shm;  // Declaración de la clave para la memoria compartida
+    key_t clave_shm;  // Clave para la memoria compartida
     int id_shm;       // Identificador de la memoria compartida
     void *ptr_shm;    // Puntero a la memoria compartida
-    sem_t *sem_punt;  // Puntero al semáforo
-    sem_t *sem_punt2; // Puntero al segundo semáforo
+    sem_t *sem_punt;  // Puntero del semáforo
+    sem_t *sem_punt2; // Puntero del segundo semáforo
     pid_t pid;        // Identificador de proceso (PID)
 
     sem_unlink(SEMF_NOMBRE);  // Elimina el semáforo si ya existe
@@ -43,15 +43,15 @@ int main(int argc, char *argv[])
 
     if (id_shm == -1)
     {
-        perror("shmget"); // Muestra un mensaje de error si falla la obtención de la memoria compartida
+        perror("Error: shmget"); // Muestra un mensaje de error si falla la obtención de la memoria compartida
         return 1;
     }
 
-    ptr_shm = shmat(id_shm, NULL, 0); // Adjunta el segmento de memoria compartida al espacio de direcciones del proceso
+    ptr_shm = shmat(id_shm, NULL, 0); // Añade el segmento de memoria compartida en el puntero
 
     if (ptr_shm == (void *)-1)
     {
-        perror("shmat"); // Muestra un mensaje de error si falla la adjunción de la memoria compartida
+        perror("Error: shmat"); // Muestra un mensaje de error si el puntero de la memoria compartida falla.
         return 1;
     }
 
@@ -60,23 +60,25 @@ int main(int argc, char *argv[])
 
     if (sem_punt == SEM_FAILED)
     {
-        perror("sem_open"); // Muestra un mensaje de error si falla la apertura del semáforo
+        perror("Error: sem_open"); // Muestra un mensaje de error si falla la apertura del semáforo
         return 1;
     }
+
     if (sem_punt2 == SEM_FAILED)
     {
-        perror("sem_open"); // Muestra un mensaje de error si falla la apertura del segundo semáforo
+        perror("Error: sem_open"); // Muestra un mensaje de error si falla la apertura del segundo semáforo
         return 1;
     }
 
     int *num_compartido = (int *)ptr_shm; // Puntero al entero compartido
-    *num_compartido = num_entrada;        // Almacena el número de entrada en la memoria compartida
+    *num_compartido = num_entrada;        // Almacena el número en la memoria compartida
 
-    pid = fork(); // Crea un nuevo proceso hijo
+    pid = fork(); // Crea un proceso hijo
 
+    // 
     if (pid < 0)
     {
-        perror("Fork falló"); // Muestra un mensaje de error si falla la creación del proceso hijo
+        perror("Error: Fork"); // Muestra un mensaje de error si falla la creación del proceso hijo
         return 1;
     }
 
@@ -120,25 +122,25 @@ int main(int argc, char *argv[])
         }
         waitpid(pid, NULL, 0); // Espera a que el proceso hijo termine
 
-        // Desconectar de la memoria compartida
+        // Desconecta la memoria compartida
         if (shmdt(ptr_shm) == -1)
         {
-            perror("shmdt"); // Muestra un mensaje de error si falla la desconexión de la memoria compartida
+            perror("Error: shmdt"); // Muestra un mensaje de error si falla la desconexión de la memoria compartida
             return 1;
         }
 
-        // Eliminar segmento de memoria compartida
+        // Elimina el segmento de memoria compartida
         if (shmctl(id_shm, IPC_RMID, NULL) == -1)
         {
-            perror("shmctl"); // Muestra un mensaje de error si falla la eliminación del segmento de memoria compartida
+            perror("Error: shmctl"); // Muestra un mensaje de error si falla la eliminación del segmento de memoria compartida
             return 1;
         }
 
-        // Cerrar y desvincular semáforo
-        sem_close(sem_punt);     // Cierra el semáforo principal
-        sem_unlink(SEMF_NOMBRE); // Desvincula el semáforo principal
-        sem_close(sem_punt2);     // Cierra el semáforo principal
-        sem_unlink(SEMF2_NOMBRE); // Desvincula el semáforo principal
+        // Cerrar y desvincular los semáforos
+        sem_close(sem_punt);     // Cierra el semáforo
+        sem_unlink(SEMF_NOMBRE); // Desvincula el semáforo 
+        sem_close(sem_punt2);     // Cierra el 2 semáforo 
+        sem_unlink(SEMF2_NOMBRE); // Desvincula el 2 semáforo 
     }
 
     return 0;
