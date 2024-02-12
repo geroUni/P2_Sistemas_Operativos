@@ -1,4 +1,4 @@
-# Makefile para act3.c
+# Makefile para activity3.c
 
 # Compilador
 CC = gcc
@@ -7,10 +7,10 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c99
 
 # Nombre del ejecutable
-TARGET = act3
+TARGET = activity3
 
 # Archivos fuente
-SRCS = act3.c
+SRCS = activity3.c
 
 all: $(TARGET)
 	@echo "¡Finalizado!"
