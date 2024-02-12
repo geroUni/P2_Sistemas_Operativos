@@ -1,12 +1,12 @@
-#include <stdio.h>    
-#include <stdlib.h>    
-#include <sys/ipc.h>   
-#include <sys/shm.h>   
-#include <sys/types.h> 
-#include <semaphore.h> 
-#include <fcntl.h>     
-#include <unistd.h>    
-#include <sys/wait.h>  
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/types.h>
+#include <semaphore.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #define SEMF_NOMBRE "/mi_semaforo"   // Definición del nombre del semáforo
 #define SEMF2_NOMBRE "/mi_semaforo2" // Definición del nombre del segundo semáforo
@@ -19,6 +19,7 @@ int main(int argc, char *argv[])
     sem_t *sem_punt;  // Puntero del semáforo
     sem_t *sem_punt2; // Puntero del segundo semáforo
     pid_t pid;        // Identificador de proceso (PID)
+    char *endptr; // Para Convertir cadenas a números
 
     sem_unlink(SEMF_NOMBRE);  // Elimina el semáforo si ya existe
     sem_unlink(SEMF2_NOMBRE); // Elimina el segundo semáforo si ya existe
@@ -30,7 +31,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    int num_entrada = atoi(argv[1]); // Convierte el argumento en un número entero
+    int num_entrada = strtol(argv[1], &endptr, 10); // Convertir a entero
+
+    // Verificar si el número es un entero
+    if (*endptr != '\0' || endptr == argv[1]) {
+        printf("Error: El número proporcionado no es entero.\n");
+        return 1;
+    }
 
     if (num_entrada < 0 || num_entrada > 100)
     {
@@ -75,7 +82,7 @@ int main(int argc, char *argv[])
 
     pid = fork(); // Crea un proceso hijo
 
-    // 
+    //
     if (pid < 0)
     {
         perror("Error: Fork"); // Muestra un mensaje de error si falla la creación del proceso hijo
@@ -137,10 +144,10 @@ int main(int argc, char *argv[])
         }
 
         // Cerrar y desvincular los semáforos
-        sem_close(sem_punt);     // Cierra el semáforo
-        sem_unlink(SEMF_NOMBRE); // Desvincula el semáforo 
-        sem_close(sem_punt2);     // Cierra el 2 semáforo 
-        sem_unlink(SEMF2_NOMBRE); // Desvincula el 2 semáforo 
+        sem_close(sem_punt);      // Cierra el semáforo
+        sem_unlink(SEMF_NOMBRE);  // Desvincula el semáforo
+        sem_close(sem_punt2);     // Cierra el 2 semáforo
+        sem_unlink(SEMF2_NOMBRE); // Desvincula el 2 semáforo
     }
 
     return 0;
